@@ -3,29 +3,54 @@
   "nodes": [
     {
       "parameters": {
-        "method": "GET",
-        "url": "http://localhost:3001/get-unread-emails",
-        "allowUnauthorizedCerts": true,
+        "url": "http://host.docker.internal:3001/get-unread-emails",
         "options": {}
       },
       "name": "Get Unread Emails via Service",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        300,
-        300
+        480,
+        -288
       ],
-      "id": "1b91992f-ced4-48d5-8a0e-fa89d01bd0bc"
+      "id": "af4cbfca-6963-4c5f-b4b1-ab2769cc76cc",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -288
+      ],
+      "id": "9792dd37-490f-4bf7-be34-43f5fcb15941",
+      "name": "When clicking ‘Execute workflow’"
     }
   ],
   "pinData": {},
-  "connections": {},
-  "active": true,
-  "settings": {},
-  "versionId": "c9a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-  "id": "newWorkflow_123",
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get Unread Emails via Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8a665318-b0de-4198-a194-168d9046aac1",
   "meta": {
+    "templateCredsSetupCompleted": true,
     "instanceId": "59e108cbb01df849edc009d9abaefb9f64963e7a7f58a5854709c1a0bbb9e20a"
   },
+  "id": "nFK25X7ZZEofbqaE",
   "tags": []
 }
