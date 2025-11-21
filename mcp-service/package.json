@@ -1,0 +1,15 @@
+{
+  "name": "mcp-service",
+  "type": "module",
+  "scripts": { "start": "node index.js" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "body-parser": "^1.20.3",
+    "axios": "^1.7.4",
+    "openai": "^4.68.1",
+    "dotenv": "^16.4.5",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.2",
+    "googleapis": "^137.1.0"
+  }
+}

@@ -1,0 +1,20 @@
+# Dependencies
+/node_modules
+/mcp-service/node_modules
+
+# Secrets
+.env
+token.json
+credentials.json
+/mcp-service/token.json
+/mcp-service/credentials.json
+
+# Local n8n data
+/n8n_data
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
