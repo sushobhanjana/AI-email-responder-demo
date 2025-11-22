@@ -15,24 +15,26 @@ const SECRET = process.env.MCP_SECRET;
 
 app.post("/analyze-email", async (req, res) => {
   try {
-    const auth = req.headers.authorization || "";
-    if (!auth.startsWith("Bearer ")) {
-      return res.status(401).send("Unauthorized: Missing Bearer token");
-    }
-    const token = auth.split(" ")[1];
-    try {
-      jwt.verify(token, SECRET);
-    } catch (jwtErr) {
-      return res.status(401).send("Unauthorized: Invalid or malformed token");
-    }
+    // const auth = req.headers.authorization || "";
+    // if (!auth.startsWith("Bearer ")) {
+    //   return res.status(401).send("Unauthorized: Missing Bearer token");
+    // }
+    // const token = auth.split(" ")[1];
+    // try {
+    //   jwt.verify(token, SECRET);
+    // } catch (jwtErr) {
+    //   return res.status(401).send("Unauthorized: Invalid or malformed token");
+    // }
 
-    // const { email } = req.body;
+    const { email } = req.body;
+    console.log("Received email to analyze:", email);
+    res.json(email);
+
     // const text = `${email.subject}\n${email.bodyPlain}`;
     // const contextDocs = await retrieveDocs(text);
     // const llmResponse = await callLLM(text, contextDocs);
 
     // res.json(llmResponse);
-    res.json(req.body); // Placeholder response
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

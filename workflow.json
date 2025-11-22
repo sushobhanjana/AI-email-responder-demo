@@ -13,8 +13,7 @@
         480,
         -288
       ],
-      "id": "af4cbfca-6963-4c5f-b4b1-ab2769cc76cc",
-      "alwaysOutputData": true
+      "id": "af4cbfca-6963-4c5f-b4b1-ab2769cc76cc"
     },
     {
       "parameters": {},
@@ -26,6 +25,54 @@
       ],
       "id": "9792dd37-490f-4bf7-be34-43f5fcb15941",
       "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Loop Over Emails",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -288
+      ],
+      "id": "c8a2b8e3-a2d5-4e3a-9c7a-9e2e6b0f1b2c"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/analyze-email",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonParameters": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "{{ $json }}"
+            }
+          ]
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_MCP_SECRET_TOKEN"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Analyze Single Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        960,
+        -288
+      ],
+      "id": "b1a0f9c2-b8e3-4d2a-8f9c-1e2d6a0e1c3d"
     }
   ],
   "pinData": {},
@@ -35,6 +82,28 @@
         [
           {
             "node": "Get Unread Emails via Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Unread Emails via Service": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Emails": {
+      "main": [
+        [
+          {
+            "node": "Analyze Single Email",
             "type": "main",
             "index": 0
           }
