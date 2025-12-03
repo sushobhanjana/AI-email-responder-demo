@@ -2,77 +2,161 @@
   "name": "Manual Gmail Fetch",
   "nodes": [
     {
-      "parameters": {
-        "url": "http://host.docker.internal:3001/get-unread-emails",
-        "options": {}
-      },
-      "name": "Get Unread Emails via Service",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
-      "position": [
-        480,
-        -288
-      ],
-      "id": "af4cbfca-6963-4c5f-b4b1-ab2769cc76cc"
-    },
-    {
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        256,
-        -288
+        432,
+        -208
       ],
-      "id": "9792dd37-490f-4bf7-be34-43f5fcb15941",
+      "id": "0a7f54be-b14a-480c-b598-83b7154a6259",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
-        "batchSize": 1,
-        "options": {}
+        "options": {
+          "reset": false
+        }
       },
-      "name": "Loop Over Emails",
       "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 2,
+      "typeVersion": 3,
       "position": [
-        720,
-        -288
+        864,
+        -464
       ],
-      "id": "c8a2b8e3-a2d5-4e3a-9c7a-9e2e6b0f1b2c"
+      "id": "ed1d0803-f537-4317-ad16-2c79373c0bb7",
+      "name": "Loop Email",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
         "method": "POST",
         "url": "http://host.docker.internal:3001/analyze-email",
         "sendBody": true,
-        "bodyContentType": "json",
-        "jsonParameters": true,
         "bodyParameters": {
           "parameters": [
             {
               "name": "email",
-              "value": "{{ $json }}"
-            }
-          ]
-        },
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer YOUR_MCP_SECRET_TOKEN"
+              "value": "={{ $json }}"
             }
           ]
         },
         "options": {}
       },
-      "name": "Analyze Single Email",
+      "name": "Analyze Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        960,
-        -288
+        1024,
+        -192
       ],
-      "id": "b1a0f9c2-b8e3-4d2a-8f9c-1e2d6a0e1c3d"
+      "id": "78989cab-ce42-470b-b2b9-f37a9d366991"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3001/get-unread-emails",
+        "options": {}
+      },
+      "name": "Fetch Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        656,
+        -208
+      ],
+      "id": "4a5bb516-352e-4324-9c02-00959d9c3f7e"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "High",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a9ef3cfb-c5e8-458f-974c-15761ecff7c5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Priority"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7d76dae3-bf92-4f06-aa3c-2e9acad3a56a",
+                    "leftValue": "={{ $json.mom_missing }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Missing MoM"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1312,
+        -320
+      ],
+      "id": "582fc801-7fa1-4ce5-8334-46160a9e8698",
+      "name": "Route Actions",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/send-digest",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "=sushobhan.jana@intglobal.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Send Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1632,
+        -304
+      ],
+      "id": "307a85d2-6c15-4792-bcda-4bb4554169e6",
+      "alwaysOutputData": true
     }
   ],
   "pinData": {},
@@ -81,29 +165,70 @@
       "main": [
         [
           {
-            "node": "Get Unread Emails via Service",
+            "node": "Fetch Emails",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Get Unread Emails via Service": {
+    "Loop Email": {
       "main": [
+        [],
         [
           {
-            "node": "Loop Over Emails",
+            "node": "Analyze Email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Loop Over Emails": {
+    "Analyze Email": {
       "main": [
         [
           {
-            "node": "Analyze Single Email",
+            "node": "Route Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Emails": {
+      "main": [
+        [
+          {
+            "node": "Loop Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Actions": {
+      "main": [
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alert": {
+      "main": [
+        [
+          {
+            "node": "Loop Email",
             "type": "main",
             "index": 0
           }
@@ -115,7 +240,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "8a665318-b0de-4198-a194-168d9046aac1",
+  "versionId": "90eeab12-6b28-4562-a654-7b156b13a3ba",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "59e108cbb01df849edc009d9abaefb9f64963e7a7f58a5854709c1a0bbb9e20a"

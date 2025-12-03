@@ -1,0 +1,54 @@
+{
+    "name": "MoM Reminder Check",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "minutes": 0,
+                            "hours": 4
+                        }
+                    ]
+                }
+            },
+            "name": "Interval Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ],
+            "id": "mom-trigger"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://host.docker.internal:3001/check-mom",
+                "options": {}
+            },
+            "name": "Check Missing MoMs",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                400,
+                300
+            ],
+            "id": "mom-check"
+        }
+    ],
+    "connections": {
+        "Interval Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Check Missing MoMs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
