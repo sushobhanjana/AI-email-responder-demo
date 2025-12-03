@@ -105,4 +105,81 @@ app.get("/get-unread-emails", async (req, res) => {
   }
 });
 
+import { getDb } from "./helpers/database.js";
+
+app.get("/dashboard", (req, res) => {
+  try {
+    const db = getDb();
+    const logs = db.prepare('SELECT * FROM email_logs ORDER BY received_at DESC LIMIT 50').all();
+    const moms = db.prepare('SELECT * FROM mom_tracker ORDER BY created_at DESC LIMIT 20').all();
+    const reminders = db.prepare('SELECT * FROM reminder_queue WHERE status = "pending"').all();
+
+    let html = `
+      <html>
+      <head>
+        <title>AI Email Responder Dashboard</title>
+        <style>
+          body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+          h2 { margin-top: 30px; border-bottom: 2px solid #333; padding-bottom: 5px; }
+          table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+          th, td { padding: 10px; border: 1px solid #ddd; text-align: left; font-size: 14px; }
+          th { background: #333; color: white; }
+          tr:nth-child(even) { background: #f9f9f9; }
+          .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+          .high { background: #ffcccc; color: #cc0000; }
+          .medium { background: #fff4cc; color: #996600; }
+          .low { background: #ccffcc; color: #006600; }
+        </style>
+      </head>
+      <body>
+        <h1>📧 AI Email Responder Dashboard</h1>
+        
+        <h2>Recent Email Logs</h2>
+        <table>
+          <tr><th>ID</th><th>Subject</th><th>Category</th><th>Priority</th><th>MoM Missing?</th><th>Time</th></tr>
+          ${logs.map(l => `
+            <tr>
+              <td>${l.email_id.substring(0, 8)}...</td>
+              <td>${l.subject}</td>
+              <td>${l.category}</td>
+              <td><span class="badge ${l.priority.toLowerCase()}">${l.priority}</span></td>
+              <td>${l.mom_missing ? '🔴 YES' : 'No'}</td>
+              <td>${new Date(l.received_at).toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </table>
+
+        <h2>MoM Tracker</h2>
+        <table>
+          <tr><th>Meeting ID</th><th>Subject</th><th>Status</th><th>MoM Received?</th></tr>
+          ${moms.map(m => `
+            <tr>
+              <td>${m.meeting_id}</td>
+              <td>${m.subject}</td>
+              <td>${m.status}</td>
+              <td>${m.mom_received ? '✅ YES' : '❌ NO'}</td>
+            </tr>
+          `).join('')}
+        </table>
+
+        <h2>Pending Reminders</h2>
+        <table>
+          <tr><th>Type</th><th>Scheduled Time</th><th>Status</th></tr>
+          ${reminders.map(r => `
+            <tr>
+              <td>${r.reminder_type}</td>
+              <td>${new Date(r.scheduled_time).toLocaleString()}</td>
+              <td>${r.status}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </body>
+      </html>
+    `;
+    res.send(html);
+  } catch (e) {
+    res.status(500).send("Error loading dashboard: " + e.message);
+  }
+});
+
 app.listen(PORT, () => console.log(`MCP running on http://localhost:${PORT}`));
