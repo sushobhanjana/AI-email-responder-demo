@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { getDb } from './database.js';
+import { sendWhatsAppMessage } from './whatsapp.js';
 
 // Configure transporter
 // In production, use environment variables for host, port, secure, auth
@@ -19,26 +20,58 @@ function getTransporter() {
 }
 
 export async function sendEmail({ to, subject, html, text }) {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-        console.log('[Notifications] SMTP credentials missing. Skipping email send.');
-        console.log(`[Mock Email] To: ${to}, Subject: ${subject}`);
-        return { message: 'Mock email sent (missing credentials)' };
+    const channel = process.env.NOTIFICATION_CHANNEL || 'EMAIL';
+    const results = {};
+
+    // 1. Send via Email
+    if (channel === 'EMAIL' || channel === 'BOTH') {
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.log('[Notifications] SMTP credentials missing. Skipping email send.');
+            console.log(`[Mock Email] To: ${to}, Subject: ${subject}`);
+            results.email = { message: 'Mock email sent (missing credentials)' };
+        } else {
+            try {
+                const info = await getTransporter().sendMail({
+                    from: process.env.SMTP_USER,
+                    to,
+                    subject,
+                    text,
+                    html
+                });
+                console.log('[Notifications] Email sent:', info.messageId);
+                results.email = info;
+            } catch (error) {
+                console.error('[Notifications] Error sending email:', error);
+                // Don't throw if we also want to try WhatsApp, unless it's the only channel
+                if (channel === 'EMAIL') throw error;
+            }
+        }
     }
 
-    try {
-        const info = await getTransporter().sendMail({
-            from: process.env.SMTP_USER,
-            to,
-            subject,
-            text,
-            html
-        });
-        console.log('[Notifications] Email sent:', info.messageId);
-        return info;
-    } catch (error) {
-        console.error('[Notifications] Error sending email:', error);
-        throw error;
+    // 2. Send via WhatsApp
+    if (channel === 'WHATSAPP' || channel === 'BOTH') {
+        // Convert HTML to simple text for WhatsApp
+        // Simple strip tags for now. In production, use a library like 'striptags' or 'html-to-text'
+        const plainText = text || html.replace(/<[^>]*>?/gm, '');
+        const whatsappMessage = `*${subject}*\n\n${plainText}`;
+
+        // Use configured recipient phone or fallback to a default
+        const recipientPhone = process.env.WHATSAPP_RECIPIENT_PHONE;
+
+        if (recipientPhone) {
+            try {
+                const waResult = await sendWhatsAppMessage(recipientPhone, whatsappMessage);
+                results.whatsapp = waResult;
+            } catch (error) {
+                // Don't throw if we also sent email
+                if (channel === 'WHATSAPP') throw error;
+            }
+        } else {
+            console.log('[Notifications] WHATSAPP_RECIPIENT_PHONE not set. Skipping WhatsApp.');
+        }
     }
+
+    return results;
 }
 
 export async function generateAndSendDigest(recipientEmail) {
