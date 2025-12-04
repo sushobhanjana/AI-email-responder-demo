@@ -36,6 +36,21 @@
                 300
             ],
             "id": "mom-check"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://host.docker.internal:3001/process-reminders",
+                "options": {}
+            },
+            "name": "Process Reminders",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                600,
+                300
+            ],
+            "id": "process-reminders"
         }
     ],
     "connections": {
@@ -44,6 +59,17 @@
                 [
                     {
                         "node": "Check Missing MoMs",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Missing MoMs": {
+            "main": [
+                [
+                    {
+                        "node": "Process Reminders",
                         "type": "main",
                         "index": 0
                     }

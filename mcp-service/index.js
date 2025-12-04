@@ -69,16 +69,58 @@ app.post("/check-mom", (req, res) => {
   }
 });
 
-app.get("/pending-reminders", (req, res) => {
+import { generateAndSendDigest, sendEmail } from "./helpers/notifications.js";
+
+app.post("/process-reminders", async (req, res) => {
   try {
     const reminders = getPendingReminders();
-    res.json(reminders);
+    const results = [];
+
+    for (const reminder of reminders) {
+      const meta = JSON.parse(reminder.metadata || '{}');
+
+      // Construct email content based on reminder type
+      let subject = "Reminder";
+      let html = "<p>You have a reminder.</p>";
+
+      if (reminder.reminder_type === 'mom_alert') {
+        subject = `Action Required: Missing MoM for ${meta.subject}`;
+        html = `
+          <h2>Missing MoM Alert</h2>
+          <p>We haven't received the Minutes of Meeting for:</p>
+          <ul>
+            <li><strong>Subject:</strong> ${meta.subject}</li>
+            <li><strong>Date:</strong> ${new Date(meta.meeting_date).toLocaleString()}</li>
+            <li><strong>Participants:</strong> ${meta.participants.join(', ')}</li>
+          </ul>
+          <p>Please reply to the original thread with the MoM.</p>
+        `;
+      }
+
+      // Send the email
+      // In a real app, we'd look up the user's email. For demo, we might use a fixed one or one from env.
+      // Assuming we send to the sender or a configured admin for now.
+      // Let's use a default recipient from env if available, else log it.
+      const recipient = process.env.DEFAULT_RECIPIENT || "user@example.com";
+
+      await sendEmail({
+        to: recipient,
+        subject,
+        html
+      });
+
+      // Update status
+      updateReminderStatus(reminder.id, 'sent');
+      results.push({ id: reminder.id, status: 'sent', recipient });
+    }
+
+    res.json({ processed: results.length, results });
   } catch (e) {
+    console.error("Reminder Processing Error:", e);
     res.status(500).json({ error: e.message });
   }
 });
 
-import { generateAndSendDigest } from "./helpers/notifications.js";
 
 app.post("/send-digest", async (req, res) => {
   try {
