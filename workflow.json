@@ -2,6 +2,26 @@
   "name": "Manual Gmail Fetch",
   "nodes": [
     {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutes": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        -208
+      ],
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger"
+    },
+    {
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
@@ -164,6 +184,17 @@
   "pinData": {},
   "connections": {
     "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Fetch Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
       "main": [
         [
           {
