@@ -3,13 +3,20 @@ import { getDb } from './database.js';
 
 // Configure transporter
 // In production, use environment variables for host, port, secure, auth
-const transporter = nodemailer.createTransport({
-    service: 'gmail', // Or use host/port from .env
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+let transporter;
+
+function getTransporter() {
+    if (!transporter) {
+        transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
     }
-});
+    return transporter;
+}
 
 export async function sendEmail({ to, subject, html, text }) {
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
@@ -19,7 +26,7 @@ export async function sendEmail({ to, subject, html, text }) {
     }
 
     try {
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: process.env.SMTP_USER,
             to,
             subject,
