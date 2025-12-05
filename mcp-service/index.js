@@ -139,8 +139,15 @@ import { authorize, listMessages } from "./helpers/gmail.js";
 
 app.get("/get-unread-emails", async (req, res) => {
   try {
+    const { filter } = req.query;
     const auth = await authorize();
-    const messages = await listMessages(auth);
+
+    let query = 'is:unread';
+    if (filter === 'important') {
+      query += ' is:important';
+    }
+
+    const messages = await listMessages(auth, { query });
     res.json(messages);
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -38,54 +38,54 @@ async function loadSavedCredentialsIfExist() {
   }
 }
 
-async function listMessages(auth, { limit = 10 } = {}) {
-    const gmail = google.gmail({version: 'v1', auth});
-    const res = await gmail.users.messages.list({
-        userId: 'me',
-        q: 'is:unread',
-        maxResults: limit,
-    });
-    const messages = res.data.messages;
-    if (!messages || messages.length === 0) {
-        return [];
-    }
-    
-    const messagePromises = messages.map(message => {
-        return gmail.users.messages.get({
-            userId: 'me',
-            id: message.id,
-            format: 'full',
-        });
-    });
+async function listMessages(auth, { limit = 10, query = 'is:unread' } = {}) {
+  const gmail = google.gmail({ version: 'v1', auth });
+  const res = await gmail.users.messages.list({
+    userId: 'me',
+    q: query,
+    maxResults: limit,
+  });
+  const messages = res.data.messages;
+  if (!messages || messages.length === 0) {
+    return [];
+  }
 
-    const results = await Promise.all(messagePromises);
+  const messagePromises = messages.map(message => {
+    return gmail.users.messages.get({
+      userId: 'me',
+      id: message.id,
+      format: 'full',
+    });
+  });
 
-    return results.map(res => parseMessage(res.data));
+  const results = await Promise.all(messagePromises);
+
+  return results.map(res => parseMessage(res.data));
 }
 
 function parseMessage(message) {
-    const headers = message.payload.headers;
-    const subject = headers.find(header => header.name === 'Subject').value;
-    const from = headers.find(header => header.name === 'From').value;
-    
-    let bodyPlain = '';
-    
-    if (message.payload.parts) {
-        const plainTextPart = message.payload.parts.find(part => part.mimeType === 'text/plain');
-        if (plainTextPart && plainTextPart.body.data) {
-            bodyPlain = Buffer.from(plainTextPart.body.data, 'base64').toString('utf8');
-        }
-    } else if (message.payload.body && message.payload.body.data) {
-        bodyPlain = Buffer.from(message.payload.body.data, 'base64').toString('utf8');
-    }
+  const headers = message.payload.headers;
+  const subject = headers.find(header => header.name === 'Subject').value;
+  const from = headers.find(header => header.name === 'From').value;
 
-    return {
-        id: message.id,
-        threadId: message.threadId,
-        subject,
-        from,
-        bodyPlain,
-    };
+  let bodyPlain = '';
+
+  if (message.payload.parts) {
+    const plainTextPart = message.payload.parts.find(part => part.mimeType === 'text/plain');
+    if (plainTextPart && plainTextPart.body.data) {
+      bodyPlain = Buffer.from(plainTextPart.body.data, 'base64').toString('utf8');
+    }
+  } else if (message.payload.body && message.payload.body.data) {
+    bodyPlain = Buffer.from(message.payload.body.data, 'base64').toString('utf8');
+  }
+
+  return {
+    id: message.id,
+    threadId: message.threadId,
+    subject,
+    from,
+    bodyPlain,
+  };
 }
 
 export { authorize, listMessages };

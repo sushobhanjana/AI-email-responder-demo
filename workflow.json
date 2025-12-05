@@ -207,7 +207,13 @@
     },
     "Loop Email": {
       "main": [
-        [],
+        [
+          {
+            "node": "Send Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Analyze Email",
@@ -221,7 +227,7 @@
       "main": [
         [
           {
-            "node": "Route Actions",
+            "node": "Loop Email",
             "type": "main",
             "index": 0
           }
@@ -266,13 +272,7 @@
     },
     "Send Alert": {
       "main": [
-        [
-          {
-            "node": "Loop Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },
