@@ -161,7 +161,7 @@ app.get("/dashboard", (req, res) => {
     const db = getDb();
     const logs = db.prepare('SELECT * FROM email_logs ORDER BY received_at DESC LIMIT 50').all();
     const moms = db.prepare('SELECT * FROM mom_tracker ORDER BY created_at DESC LIMIT 20').all();
-    const reminders = db.prepare('SELECT * FROM reminder_queue WHERE status = "pending"').all();
+    const reminders = db.prepare("SELECT * FROM reminder_queue WHERE status = 'pending'").all();
 
     let html = `
       <html>
