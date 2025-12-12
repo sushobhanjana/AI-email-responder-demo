@@ -1,39 +1,41 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
-import fs from 'fs';
-
-dotenv.config({ path: '../.env' });
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 async function listModels() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // For v1beta, we might need to access the model list differently or just try to instantiate and get info.
-    // The SDK doesn't have a direct 'listModels' method exposed easily on the main class in some versions, 
-    // but usually it's via the API. 
-    // Actually, the SDK might not expose listModels directly in the helper.
-    // Let's try a direct REST call using fetch if the SDK doesn't make it obvious, 
-    // but let's try to see if we can just use a known working model like 'gemini-pro'.
-
-    // However, let's try to use the API key to fetch the list via REST to be sure.
-    const apiKey = process.env.GEMINI_API_KEY;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-
     try {
-        const response = await fetch(url);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Dummy init to get client
+        // The SDK doesn't expose listModels directly on the instance easily in all versions, 
+        // but we can try to use the model manager if available, or just catch the error which implies connection works.
+        // Actually, checking documentation, we should try to generic list if possible, or just print what we can.
+        // Let's use the API KEY to simple fetch via REST if SDK is obscure, but SDK usually has `listModels`.
+        // Wait, the error says "Call ListModels". In node SDK: nothing top level?
+        // Let's try a direct REST call relative to the key to be sure, or use a known script pattern.
+
+        // Attempting REST call for certainty as SDK method signatures vary by version
+        const key = process.env.GEMINI_API_KEY;
+        if (!key) throw new Error("No API Key");
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         const data = await response.json();
-        let output = "Available Models:\n";
+
         if (data.models) {
+            console.log("Available Models:");
             data.models.forEach(m => {
                 if (m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")) {
-                    output += `- ${m.name}\n`;
+                    console.log(`- ${m.name}`);
                 }
             });
         } else {
-            output += "No models found or error: " + JSON.stringify(data);
+            console.log("No models found or error:", JSON.stringify(data, null, 2));
         }
-        fs.writeFileSync('models_output.txt', output);
-        console.log("Wrote to models_output.txt");
+
     } catch (error) {
-        fs.writeFileSync('models_output.txt', "Error: " + error.message);
+        console.error("Error listing models:", error);
     }
 }
 

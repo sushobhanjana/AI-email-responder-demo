@@ -53,7 +53,15 @@ app.post("/analyze-email", async (req, res) => {
 
     console.log(`Analyzed & Logged: ${email.subject} [${analysis.category}/${analysis.priority}]`);
 
-    res.json(analysis);
+    // Return merged data for workflow usage
+    res.json({
+      ...analysis,
+      subject: email.subject,
+      from: email.from,
+      snippet: email.snippet,
+      thread_id: email.threadId,
+      sender: emailData.sender
+    });
   } catch (e) {
     console.error("Analysis Error:", e);
     res.status(500).json({ error: e.message });
@@ -69,7 +77,7 @@ app.post("/check-mom", (req, res) => {
   }
 });
 
-import { generateAndSendDigest, sendEmail } from "./helpers/notifications.js";
+import { generateAndSendDigest, sendEmail, sendSingleAlert } from "./helpers/notifications.js";
 
 app.post("/process-reminders", async (req, res) => {
   try {
@@ -135,6 +143,20 @@ app.post("/send-digest", async (req, res) => {
   }
 });
 
+app.post("/send-alert", async (req, res) => {
+  try {
+    console.log("[DEBUG] /send-alert received body:", JSON.stringify(req.body, null, 2));
+    const { email, recipient } = req.body;
+    if (!email || Object.keys(email).length === 0 || !recipient) {
+      return res.status(400).json({ error: "Email data (non-empty) and recipient are required" });
+    }
+    const result = await sendSingleAlert(email, recipient);
+    res.json({ status: "success", result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 import { authorize, listMessages } from "./helpers/gmail.js";
 
 app.get("/get-unread-emails", async (req, res) => {
@@ -147,7 +169,11 @@ app.get("/get-unread-emails", async (req, res) => {
       query += ' is:important';
     }
 
-    const messages = await listMessages(auth, { query });
+    // specific query param > env var > default 5
+    const envLimit = process.env.EMAIL_BATCH_LIMIT ? parseInt(process.env.EMAIL_BATCH_LIMIT) : 5;
+    const maxResults = envLimit;
+
+    const messages = await listMessages(auth, { limit: maxResults, query });
     res.json(messages);
   } catch (e) {
     res.status(500).json({ error: e.message });

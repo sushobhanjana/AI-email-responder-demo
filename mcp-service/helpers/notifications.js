@@ -136,3 +136,35 @@ export async function generateAndSendDigest(recipientEmail) {
         html
     });
 }
+
+export async function sendSingleAlert(emailData, recipientEmail) {
+    const { subject, category, priority, reason, thread_id, sender } = emailData;
+
+    let emoji = '⚠️';
+    if (priority === 'High') emoji = '🚨';
+    if (emailData.is_urgent) emoji = '⚡';
+
+    const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #d32f2f;">${emoji} ${priority} Alert: ${subject}</h2>
+            <p><strong>From:</strong> ${sender}</p>
+            <p><strong>Category:</strong> ${category}</p>
+            <div style="background: #fff3e0; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                <strong>Analysis Reason:</strong><br/>
+                ${reason}
+            </div>
+            <p>
+                <a href="https://mail.google.com/mail/u/0/#inbox/${thread_id}" 
+                   style="background: #1976d2; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                   View in Gmail
+                </a>
+            </p>
+        </div>
+    `;
+
+    return sendEmail({
+        to: recipientEmail,
+        subject: `${emoji} ${priority}: ${subject}`,
+        html
+    });
+}

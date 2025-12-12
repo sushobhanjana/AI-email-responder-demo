@@ -14,10 +14,29 @@ function getGenAI() {
   return genAI;
 }
 
+// Helper for exponential backoff
+async function retryWithBackoff(fn, retries = 5, delay = 2000) {
+  try {
+    return await fn();
+  } catch (error) {
+    // Check for 429 Too Many Requests or 503 Service Unavailable
+    if (retries > 0 && (error.message.includes("429") || error.message.includes("503"))) {
+      console.warn(`[Gemini API] Rate limit hit. Retrying in ${delay}ms... (${retries} retries left)`);
+      if (error.message.includes("Quota exceeded")) console.warn(`[Gemini API] Quota exceeded details: ${error.message}`);
+
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryWithBackoff(fn, retries - 1, delay * 2); // Exponential backoff
+    }
+    throw error;
+  }
+}
+
 export async function embedText(text) {
-  const model = getGenAI().getGenerativeModel({ model: "text-embedding-004" });
-  const result = await model.embedContent(text);
-  return result.embedding.values;
+  return retryWithBackoff(async () => {
+    const model = getGenAI().getGenerativeModel({ model: "text-embedding-004" });
+    const result = await model.embedContent(text);
+    return result.embedding.values;
+  });
 }
 
 export async function retrieveDocs(text) {
@@ -59,12 +78,15 @@ EMAIL CONTENT:
 ${emailText}
 `;
 
-  const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: { responseMimeType: "application/json" }
-  });
+  return retryWithBackoff(async () => {
+    const model = getGenAI().getGenerativeModel({
+      // Using gemini-2.5-flash-lite as verified working model
+      model: "gemini-2.5-flash-lite",
+      generationConfig: { responseMimeType: "application/json" }
+    });
 
-  const result = await model.generateContent(systemPrompt);
-  const response = await result.response;
-  return JSON.parse(response.text());
+    const result = await model.generateContent(systemPrompt);
+    const response = await result.response;
+    return JSON.parse(response.text());
+  });
 }

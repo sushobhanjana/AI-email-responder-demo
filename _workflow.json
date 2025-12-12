@@ -1,0 +1,426 @@
+{
+  "name": "AI_email_assistance_workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        64
+      ],
+      "id": "70fe55cb-89c8-4611-87f2-b80fd7d12e50"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/send-digest",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "sushobhan.jana@intglobal.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Trigger Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -208,
+        64
+      ],
+      "id": "86f82e7f-1b8a-4a07-a128-c2500ad339b0"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/process-reminders",
+        "options": {}
+      },
+      "name": "Process Reminders",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        16,
+        288
+      ],
+      "id": "bf671b16-0454-4247-b037-a112ed47f8aa",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "name": "Interval Trigger1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        288
+      ],
+      "id": "8513ec74-2d95-4a31-9e7d-6681bb041aa5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/check-mom",
+        "options": {}
+      },
+      "name": "Check Missing MoMs1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -208,
+        288
+      ],
+      "id": "4cd64107-b437-4bac-b6a4-7262a265e5f0"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        624
+      ],
+      "id": "62cc13b9-2766-4929-b8dc-f31ceb8eba4e",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        16,
+        624
+      ],
+      "id": "01a78d24-0c5c-4e63-bbbe-c3b8d8f454be",
+      "name": "Loop Email1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/analyze-email",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Analyze Email1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        240,
+        704
+      ],
+      "id": "227ab216-f3c6-4c46-a508-d8db06bab313"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:3001/get-unread-emails",
+        "options": {}
+      },
+      "name": "Fetch Emails1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -208,
+        624
+      ],
+      "id": "a422a8b6-2f50-42fe-bb66-3ca6b0c6bc74"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.priority }}",
+                    "rightValue": "High",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a9ef3cfb-c5e8-458f-974c-15761ecff7c5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Priority"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "urgent-rule-id",
+                    "leftValue": "={{ $json.is_urgent }}",
+                    "rightValue": true,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Urgent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7d76dae3-bf92-4f06-aa3c-2e9acad3a56a",
+                    "leftValue": "={{ $json.mom_missing }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Missing MoM"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        -208,
+        864
+      ],
+      "id": "cffe39d6-b4cd-41f4-b15f-b584c0e65ce4",
+      "name": "Route Actions1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/send-alert",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "recipient",
+              "value": "sushobhan.jana@intglobal.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Send Alert1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        240,
+        512
+      ],
+      "id": "31ffd348-87f0-413f-98c1-8780c6993c4c",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Trigger Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Interval Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Check Missing MoMs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Missing MoMs1": {
+      "main": [
+        [
+          {
+            "node": "Process Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Emails1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Email1": {
+      "main": [
+        [
+          {
+            "node": "Analyze Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Email1": {
+      "main": [
+        [
+          {
+            "node": "Route Actions1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Emails1": {
+      "main": [
+        [
+          {
+            "node": "Loop Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Actions1": {
+      "main": [
+        [
+          {
+            "node": "Send Alert1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Alert1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Alert1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Alert1": {
+      "main": [
+        [
+          {
+            "node": "Loop Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "16bbd027-fd8e-44ef-a1fe-416eaca9c87f",
+  "meta": {
+    "instanceId": "59e108cbb01df849edc009d9abaefb9f64963e7a7f58a5854709c1a0bbb9e20a"
+  },
+  "id": "Dm8Tm3Y7oCeu6QTJ",
+  "tags": []
+}
