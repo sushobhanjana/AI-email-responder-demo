@@ -20,3 +20,54 @@ services:
       - ./n8n_data:/home/node/.n8n
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  strapiDB:
+    image: postgres:16-alpine
+    container_name: strapiDB
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - strapi-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  strapi:
+    container_name: strapi
+    build:
+      context: ./cms
+      dockerfile: Dockerfile
+    command: /bin/sh -c "npm run build && npm run start"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: strapiDB
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      APP_KEYS: ${APP_KEYS}
+      API_TOKEN_SALT: ${API_TOKEN_SALT}
+      TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT}
+    volumes:
+      - ./cms/config:/opt/app/config
+      - ./cms/src:/opt/app/src
+      - ./cms/package.json:/opt/app/package.json
+      - ./cms/yarn.lock:/opt/app/yarn.lock
+      - ./cms/public/uploads:/opt/app/public/uploads
+      - ./.env:/opt/app/.env
+    ports:
+      - "1337:1337"
+    depends_on:
+      - strapiDB
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  strapi-data:

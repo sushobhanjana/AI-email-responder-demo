@@ -90,3 +90,20 @@ ${emailText}
     return JSON.parse(response.text());
   });
 }
+
+export async function upsertDoc(collectionName, doc) {
+  // doc should optionally have { id, vector, payload }
+  // If vector is missing but text is present, we embed it.
+  if (!doc.vector && doc.payload && doc.payload.text) {
+    doc.vector = await embedText(doc.payload.text);
+  }
+
+  // Ensure ID is present (or generate one?)
+  // For policies, we can use hash of slug or just a consistent ID map.
+  // Strapi ID is numeric (1, 2, 3...). We can use that directly.
+
+  return client.upsert(collectionName, {
+    wait: true,
+    points: [doc]
+  });
+}

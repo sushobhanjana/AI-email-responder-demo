@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { upsertDoc } from "./helpers/vector.js";
 // import { retrieveDocs, embedText, callLLM } from "./helpers/vector.js";
 
 dotenv.config({ path: '../.env' });
@@ -254,6 +255,36 @@ app.get("/dashboard", (req, res) => {
     res.send(html);
   } catch (e) {
     res.status(500).send("Error loading dashboard: " + e.message);
+  }
+});
+
+app.post("/webhooks/policy-update", async (req, res) => {
+  try {
+    const { model, entry, event } = req.body;
+    console.log(`Webhook received: ${event} on ${model}`);
+
+    if (model === "policy" && (event === "entry.create" || event === "entry.update" || event === "entry.publish")) {
+      // Strapi 5 might use different event names, but entry.create/update are standard. 
+      // Also check if content exists.
+      if (entry.content) {
+        await upsertDoc(process.env.QDRANT_COLLECTION || "policies", {
+          id: entry.id,
+          payload: {
+            title: entry.title,
+            text: entry.content,
+            slug: entry.slug,
+            source: "strapi",
+            updatedAt: entry.updatedAt
+          }
+        });
+        console.log(`Synced policy '${entry.title}' to Qdrant.`);
+      }
+    }
+
+    res.json({ status: "processed" });
+  } catch (e) {
+    console.error("Webhook processing error:", e);
+    res.status(500).json({ error: e.message });
   }
 });
 
