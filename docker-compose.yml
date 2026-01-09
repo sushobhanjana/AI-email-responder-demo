@@ -40,7 +40,7 @@ services:
     build:
       context: ./cms
       dockerfile: Dockerfile
-    command: /bin/sh -c "npm run build && npm run start"
+    command: npm run develop
     restart: unless-stopped
     env_file: .env
     environment:

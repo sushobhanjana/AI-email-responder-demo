@@ -47,7 +47,8 @@ async function migrate() {
                 data: {
                     title: title,
                     slug: slug,
-                    content: content
+                    content: content,
+                    publishedAt: new Date()
                 }
             });
             console.log(`✅ Success: ${file}`);

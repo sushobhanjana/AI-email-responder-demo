@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 
+import ReactMarkdown from 'react-markdown';
+
 async function getPolicy(slug: string) {
     try {
         const res = await fetch(`http://localhost:1337/api/policies?filters[slug][$eq]=${slug}`, { cache: 'no-store' });
@@ -11,8 +13,9 @@ async function getPolicy(slug: string) {
     }
 }
 
-export default async function PolicyPage({ params }: { params: { slug: string } }) {
-    const policy = await getPolicy(params.slug);
+export default async function PolicyPage({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const policy = await getPolicy(slug);
 
     if (!policy) {
         notFound();
@@ -30,9 +33,8 @@ export default async function PolicyPage({ params }: { params: { slug: string } 
                         {policy.title}
                     </h1>
 
-                    <div className="prose prose-lg max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
-                        {/* Note: In production use react-markdown here */}
-                        {policy.content}
+                    <div className="prose prose-blue prose-lg max-w-none text-gray-700 leading-relaxed">
+                        <ReactMarkdown>{policy.content}</ReactMarkdown>
                     </div>
 
                     <div className="mt-12 pt-6 border-t text-sm text-gray-400">
