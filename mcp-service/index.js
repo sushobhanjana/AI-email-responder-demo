@@ -15,7 +15,7 @@ const PORT = 3001;
 const SECRET = process.env.MCP_SECRET;
 
 import { classifyEmail } from "./helpers/classifier.js";
-import { logEmail } from "./helpers/database.js";
+import { logEmail, getEmail } from "./helpers/database.js";
 
 import { processMoM, checkAndQueueReminders } from "./helpers/mom-tracker.js";
 import { getPendingReminders, updateReminderStatus } from "./helpers/database.js";
@@ -24,6 +24,21 @@ app.post("/analyze-email", async (req, res) => {
   try {
     const { email } = req.body;
     console.log("Received email to analyze:", email.subject);
+
+    // 0. Idempotency Check
+    const existing = getEmail(email.id);
+    if (existing && existing.analysis_json) {
+      console.log(`Skipping analysis. Email ${email.id} already exists.`);
+      const cachedAnalysis = JSON.parse(existing.analysis_json);
+      return res.json({
+        ...cachedAnalysis,
+        subject: email.subject,
+        from: email.from,
+        snippet: email.snippet,
+        thread_id: email.threadId,
+        sender: existing.sender
+      });
+    }
 
     // 1. Classify Email
     const analysis = await classifyEmail(email);

@@ -15,7 +15,7 @@ function getGenAI() {
 }
 
 // Helper for exponential backoff
-async function retryWithBackoff(fn, retries = 5, delay = 2000) {
+async function retryWithBackoff(fn, retries = 3, delay = 2000) {
   try {
     return await fn();
   } catch (error) {
@@ -33,8 +33,11 @@ async function retryWithBackoff(fn, retries = 5, delay = 2000) {
 
 export async function embedText(text) {
   return retryWithBackoff(async () => {
-    const model = getGenAI().getGenerativeModel({ model: "text-embedding-004" });
-    const result = await model.embedContent(text);
+    const model = getGenAI().getGenerativeModel({ model: "gemini-embedding-001" });
+    const result = await model.embedContent({
+      content: { parts: [{ text }] },
+      outputDimensionality: 768
+    });
     return result.embedding.values;
   });
 }
@@ -80,8 +83,8 @@ ${emailText}
 
   return retryWithBackoff(async () => {
     const model = getGenAI().getGenerativeModel({
-      // Using gemini-2.5-flash-lite as verified working model
-      model: "gemini-2.5-flash-lite",
+      // Using gemini-flash-lite-latest (likely 1.5-Flash-8B) as it passes rate limit tests
+      model: "gemini-flash-lite-latest",
       generationConfig: { responseMimeType: "application/json" }
     });
 

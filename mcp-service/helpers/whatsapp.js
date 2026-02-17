@@ -21,7 +21,7 @@ export async function sendWhatsAppMessage(to, text) {
             },
             body: JSON.stringify({
                 messaging_product: 'whatsapp',
-                to: to,
+                to: to.replace(/\D/g, ''),
                 type: 'text',
                 text: { body: text }
             })
