@@ -173,7 +173,41 @@ app.post("/send-alert", async (req, res) => {
   }
 });
 
-import { authorize, listMessages } from "./helpers/gmail.js";
+import { authorize, listMessages, getOAuthClient, saveCredentials, SCOPES } from "./helpers/gmail.js";
+
+app.get("/auth/google", async (req, res) => {
+  try {
+    const client = await getOAuthClient();
+    const authUrl = client.generateAuthUrl({
+      access_type: 'offline',
+      scope: SCOPES,
+      // Force approval prompt to ensure we get a refresh token
+      prompt: 'consent'
+    });
+    res.redirect(authUrl);
+  } catch (e) {
+    console.error("Auth Start Error:", e);
+    res.status(500).send("Error starting auth: " + e.message);
+  }
+});
+
+app.get("/auth/google/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+    if (!code) {
+      return res.status(400).send("No code provided");
+    }
+    const client = await getOAuthClient();
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
+    await saveCredentials(client);
+
+    res.redirect('/dashboard?status=connected');
+  } catch (e) {
+    console.error("Auth Callback Error:", e);
+    res.status(500).send("Error validating token: " + e.message);
+  }
+});
 
 app.get("/get-unread-emails", async (req, res) => {
   try {
@@ -224,6 +258,12 @@ app.get("/dashboard", (req, res) => {
       </head>
       <body>
         <h1>📧 AI Email Responder Dashboard</h1>
+
+        <div style="margin-bottom: 20px; padding: 10px; background: white; border: 1px solid #ddd;">
+           <h3>Settings</h3>
+           <a href="/auth/google" style="background: #dd4b39; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Connect Gmail</a>
+           <span style="margin-left: 10px; color: #666; font-size: 14px;">(Click to authorize or re-authorize)</span>
+        </div>
         
         <h2>Recent Email Logs</h2>
         <table>

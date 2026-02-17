@@ -6,19 +6,54 @@ const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
+// Exported for web flow
+export async function getOAuthClient() {
+  const content = await fs.readFile(CREDENTIALS_PATH);
+  const keys = JSON.parse(content);
+  const key = keys.installed || keys.web;
+
+  // Create an OAuth2 client with the given credentials
+  // We use the first redirect URI from the file, but for web flow we might need to override it dynamically 
+  // if localhost:3001/auth/google/callback isn't the first one. 
+  // We force the callback URL to match our route.
+  const redirectUri = 'http://localhost:3001/auth/google/callback';
+
+  return new google.auth.OAuth2(
+    key.client_id,
+    key.client_secret,
+    redirectUri
+  );
+}
+
+export async function saveCredentials(client) {
+  const content = await fs.readFile(CREDENTIALS_PATH);
+  const keys = JSON.parse(content);
+  const key = keys.installed || keys.web;
+  const payload = JSON.stringify({
+    type: 'authorized_user',
+    client_id: key.client_id,
+    client_secret: key.client_secret,
+    refresh_token: client.credentials.refresh_token,
+  });
+  await fs.writeFile(TOKEN_PATH, payload);
+}
+
 /**
  * Load or request or authorization to call APIs.
- *
  */
 async function authorize() {
   let client = await loadSavedCredentialsIfExist();
   if (client) {
     return client;
   }
+
+  // If no token exists, we can't auto-authorize in headless mode easily without the web flow or CLI interaction.
+  // For the web service, we might just return null or throw, prompting the user to go to /auth/google
+  // But to keep backward compatibility with CLI usage (if any), we keep the error.
   throw new Error(
     'Failed to load credentials from token.json. ' +
     'The file might be missing, corrupted, or have incorrect permissions. ' +
-    'Please try generating it again by running: node mcp-service/get-gmail-token.js'
+    'Please authenticate via the Dashboard or run: node mcp-service/get-gmail-token.js'
   );
 }
 
@@ -33,7 +68,7 @@ async function loadSavedCredentialsIfExist() {
     const credentials = JSON.parse(content);
     return google.auth.fromJSON(credentials);
   } catch (err) {
-    console.error("Failed to load token.json. Error:", err.message);
+    // console.error("Failed to load token.json. Error:", err.message);
     return null;
   }
 }
@@ -65,8 +100,8 @@ async function listMessages(auth, { limit = 10, query = 'is:unread' } = {}) {
 
 function parseMessage(message) {
   const headers = message.payload.headers;
-  const subject = headers.find(header => header.name === 'Subject').value;
-  const from = headers.find(header => header.name === 'From').value;
+  const subject = headers.find(header => header.name === 'Subject')?.value || '(No Subject)';
+  const from = headers.find(header => header.name === 'From')?.value || '(Unknown Sender)';
 
   let bodyPlain = '';
 
@@ -88,4 +123,4 @@ function parseMessage(message) {
   };
 }
 
-export { authorize, listMessages };
+export { authorize, listMessages, SCOPES };
