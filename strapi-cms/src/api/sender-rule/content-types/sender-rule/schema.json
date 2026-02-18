@@ -1,0 +1,34 @@
+{
+    "kind": "collectionType",
+    "collectionName": "sender_rules",
+    "info": {
+        "singularName": "sender-rule",
+        "pluralName": "sender-rules",
+        "displayName": "Sender Rule",
+        "description": "Rules to prioritize emails from specific senders"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string"
+        },
+        "sender_email": {
+            "type": "email",
+            "required": true,
+            "unique": true
+        },
+        "priority": {
+            "type": "enumeration",
+            "enum": [
+                "Low",
+                "Medium",
+                "High"
+            ],
+            "default": "High",
+            "required": true
+        }
+    }
+}

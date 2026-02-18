@@ -126,3 +126,19 @@ export function updateMeeting(meetingId, updates) {
         WHERE meeting_id = ?
     `).run(...values);
 }
+
+// Sender Rules
+export function upsertSenderRule(rule) {
+    const stmt = getDb().prepare(`
+        INSERT INTO sender_rules (policy_id, sender_email, priority)
+        VALUES (@policy_id, @sender_email, @priority)
+        ON CONFLICT(sender_email) DO UPDATE SET
+            priority = excluded.priority,
+            policy_id = excluded.policy_id
+    `);
+    return stmt.run(rule);
+}
+
+export function getSenderRule(senderEmail) {
+    return getDb().prepare('SELECT * FROM sender_rules WHERE sender_email = ?').get(senderEmail);
+}

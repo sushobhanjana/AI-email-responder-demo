@@ -83,8 +83,8 @@ ${emailText}
 
   return retryWithBackoff(async () => {
     const model = getGenAI().getGenerativeModel({
-      // Using gemini-flash-lite-latest (likely 1.5-Flash-8B) as it passes rate limit tests
-      model: "gemini-flash-lite-latest",
+      // Using gemini-flash-latest (Alias for stable Flash model, likely 1.5)
+      model: "gemini-flash-latest",
       generationConfig: { responseMimeType: "application/json" }
     });
 

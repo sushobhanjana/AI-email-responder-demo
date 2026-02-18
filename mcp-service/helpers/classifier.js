@@ -1,4 +1,5 @@
 import { retrieveDocs, callLLM } from './vector.js';
+import { getSenderRule } from './database.js';
 
 // Rule-based constants (should be loaded from policies/config in production)
 const HIERARCHY_DOMAINS = ['yourcompany.com']; // Replace with actual internal domain
@@ -40,6 +41,18 @@ export async function classifyEmail(email) {
     }
     if (llmResult.is_escalation || llmResult.is_urgent) {
         priority = 'High';
+    }
+
+    // 5. Strict Sender Rule Override
+    // Robust email extraction: matches <email> or just email, handles whitespace
+    const emailMatch = from.match(/<([^>]+)>|(\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b)/i);
+    let cleanSender = emailMatch ? (emailMatch[1] || emailMatch[0]) : from;
+    cleanSender = cleanSender.trim().toLowerCase(); // Normalize for DB lookup
+
+    const senderRule = getSenderRule(cleanSender);
+    if (senderRule) {
+        priority = senderRule.priority;
+        console.log(`[Classifier] Applied Rule for ${cleanSender}: Priority -> ${priority}`);
     }
 
     return {

@@ -120,7 +120,20 @@ function parseMessage(message) {
     subject,
     from,
     bodyPlain,
+    internalDate: parseInt(message.internalDate) // Extract timestamp
   };
 }
 
-export { authorize, listMessages, SCOPES };
+async function markAsRead(auth, messageId) {
+  const gmail = google.gmail({ version: 'v1', auth });
+  await gmail.users.messages.modify({
+    userId: 'me',
+    id: messageId,
+    requestBody: {
+      removeLabelIds: ['UNREAD']
+    }
+  });
+  console.log(`Marked email ${messageId} as READ.`);
+}
+
+export { authorize, listMessages, markAsRead, SCOPES };

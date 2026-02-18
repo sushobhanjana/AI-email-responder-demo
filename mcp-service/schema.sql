@@ -47,3 +47,11 @@ CREATE TABLE IF NOT EXISTS mom_tracker (
 CREATE INDEX IF NOT EXISTS idx_email_logs_date ON email_logs(received_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_status ON reminder_queue(status, scheduled_time);
 CREATE INDEX IF NOT EXISTS idx_mom_status ON mom_tracker(status);
+
+CREATE TABLE IF NOT EXISTS sender_rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    policy_id INTEGER, -- Link back to Strapi ID
+    sender_email TEXT UNIQUE NOT NULL,
+    priority TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

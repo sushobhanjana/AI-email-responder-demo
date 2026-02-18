@@ -81,7 +81,7 @@ export async function generateAndSendDigest(recipientEmail) {
     const highPriority = db.prepare(`
         SELECT * FROM email_logs 
         WHERE priority = 'High' 
-        AND received_at >= datetime('now', '-1 day')
+        AND created_at >= datetime('now', '-1 day')
         ORDER BY received_at DESC
     `).all();
 

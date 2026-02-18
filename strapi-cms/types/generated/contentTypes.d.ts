@@ -461,6 +461,41 @@ export interface ApiPolicyPolicy extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiSenderRuleSenderRule extends Struct.CollectionTypeSchema {
+  collectionName: 'sender_rules';
+  info: {
+    description: 'Rules to prioritize emails from specific senders';
+    displayName: 'Sender Rule';
+    pluralName: 'sender-rules';
+    singularName: 'sender-rule';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::sender-rule.sender-rule'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    priority: Schema.Attribute.Enumeration<['Low', 'Medium', 'High']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'High'>;
+    publishedAt: Schema.Attribute.DateTime;
+    sender_email: Schema.Attribute.Email &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -972,6 +1007,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::policy.policy': ApiPolicyPolicy;
+      'api::sender-rule.sender-rule': ApiSenderRuleSenderRule;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

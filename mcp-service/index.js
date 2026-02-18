@@ -15,7 +15,7 @@ const PORT = 3001;
 const SECRET = process.env.MCP_SECRET;
 
 import { classifyEmail } from "./helpers/classifier.js";
-import { logEmail, getEmail } from "./helpers/database.js";
+import { logEmail, getEmail, upsertSenderRule, getSenderRule } from "./helpers/database.js";
 
 import { processMoM, checkAndQueueReminders } from "./helpers/mom-tracker.js";
 import { getPendingReminders, updateReminderStatus } from "./helpers/database.js";
@@ -29,6 +29,16 @@ app.post("/analyze-email", async (req, res) => {
     const existing = getEmail(email.id);
     if (existing && existing.analysis_json) {
       console.log(`Skipping analysis. Email ${email.id} already exists.`);
+
+      // OPTIONAL: If it exists in DB but is still unread in Gmail (e.g. previous run crashed before marking read),
+      // we should probably mark it read now to clear the queue.
+      try {
+        const auth = await authorize();
+        await markAsRead(auth, email.id);
+      } catch (err) {
+        console.error(`Failed to mark existing email ${email.id} as read:`, err.message);
+      }
+
       const cachedAnalysis = JSON.parse(existing.analysis_json);
       return res.json({
         ...cachedAnalysis,
@@ -68,6 +78,14 @@ app.post("/analyze-email", async (req, res) => {
     await processMoM(email, analysis);
 
     console.log(`Analyzed & Logged: ${email.subject} [${analysis.category}/${analysis.priority}]`);
+
+    // 4. Mark as Read in Gmail to prevent re-fetching
+    try {
+      const auth = await authorize();
+      await markAsRead(auth, email.id);
+    } catch (err) {
+      console.error(`Failed to mark email ${email.id} as read:`, err.message);
+    }
 
     // Return merged data for workflow usage
     res.json({
@@ -173,7 +191,7 @@ app.post("/send-alert", async (req, res) => {
   }
 });
 
-import { authorize, listMessages, getOAuthClient, saveCredentials, SCOPES } from "./helpers/gmail.js";
+import { authorize, listMessages, markAsRead, getOAuthClient, saveCredentials, SCOPES } from "./helpers/gmail.js";
 
 app.get("/auth/google", async (req, res) => {
   try {
@@ -318,9 +336,17 @@ app.post("/webhooks/policy-update", async (req, res) => {
     const { model, entry, event } = req.body;
     console.log(`Webhook received: ${event} on ${model}`);
 
+    if (model === "sender-rule" && (event === "entry.create" || event === "entry.update" || event === "entry.publish")) {
+      await upsertSenderRule({
+        policy_id: entry.id, // Using Strapi ID
+        sender_email: entry.sender_email,
+        priority: entry.priority || 'High'
+      });
+      console.log(`Synced sender rule for '${entry.sender_email}' (Priority: ${entry.priority})`);
+    }
+
     if (model === "policy" && (event === "entry.create" || event === "entry.update" || event === "entry.publish")) {
-      // Strapi 5 might use different event names, but entry.create/update are standard. 
-      // Also check if content exists.
+      // Also sync to Qdrant if there is text content (Dual-mode policies allowed)
       if (entry.content) {
         await upsertDoc(process.env.QDRANT_COLLECTION || "policies", {
           id: entry.id,
