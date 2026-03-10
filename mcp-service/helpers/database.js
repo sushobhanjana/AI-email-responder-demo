@@ -154,3 +154,16 @@ export function getPastEmailsForSender(senderEmail, limit = 5) {
         LIMIT ?
     `).all(senderEmail, limit);
 }
+
+// Global Settings Methods
+export function getSetting(key, defaultValue = null) {
+    const row = getDb().prepare('SELECT value FROM global_settings WHERE key = ?').get(key);
+    return row ? row.value : defaultValue;
+}
+
+export function setSetting(key, value) {
+    getDb().prepare(`
+        INSERT INTO global_settings (key, value) VALUES (?, ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    `).run(key, value);
+}

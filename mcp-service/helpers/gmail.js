@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 const TOKEN_PATH = path.join(process.cwd(), 'token.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
@@ -136,4 +136,10 @@ async function markAsRead(auth, messageId) {
   console.log(`Marked email ${messageId} as READ.`);
 }
 
-export { authorize, listMessages, markAsRead, SCOPES };
+async function getUserEmail(auth) {
+  const gmail = google.gmail({ version: 'v1', auth });
+  const profile = await gmail.users.getProfile({ userId: 'me' });
+  return profile.data.emailAddress;
+}
+
+export { authorize, listMessages, markAsRead, getUserEmail, SCOPES };

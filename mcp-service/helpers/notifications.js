@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getDb } from './database.js';
+import { getDb, getSetting } from './database.js';
 import { sendWhatsAppMessage } from './whatsapp.js';
 
 // Configure transporter
@@ -20,7 +20,7 @@ function getTransporter() {
 }
 
 export async function sendEmail({ to, subject, html, text }) {
-    const channel = process.env.NOTIFICATION_CHANNEL || 'EMAIL';
+    const channel = getSetting('NOTIFICATION_CHANNEL') || process.env.NOTIFICATION_CHANNEL || 'EMAIL';
     const results = {};
 
     // 1. Send via Email
@@ -56,7 +56,7 @@ export async function sendEmail({ to, subject, html, text }) {
         const whatsappMessage = `*${subject}*\n\n${plainText}`;
 
         // Use configured recipient phone or fallback to a default
-        const recipientPhone = process.env.WHATSAPP_RECIPIENT_PHONE;
+        const recipientPhone = getSetting('WHATSAPP_RECIPIENT_PHONE') || process.env.WHATSAPP_RECIPIENT_PHONE;
 
         if (recipientPhone) {
             try {

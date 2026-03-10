@@ -10,12 +10,13 @@ dotenv.config({ path: '../.env' });
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const PORT = 3001;
 const SECRET = process.env.MCP_SECRET;
 
 import { classifyEmail } from "./helpers/classifier.js";
-import { logEmail, getEmail, upsertSenderRule, getSenderRule } from "./helpers/database.js";
+import { logEmail, getEmail, upsertSenderRule, getSenderRule, getSetting, setSetting } from "./helpers/database.js";
 
 import { processMoM, checkAndQueueReminders } from "./helpers/mom-tracker.js";
 import { getPendingReminders, updateReminderStatus } from "./helpers/database.js";
@@ -143,7 +144,7 @@ app.post("/process-reminders", async (req, res) => {
       // In a real app, we'd look up the user's email. For demo, we might use a fixed one or one from env.
       // Assuming we send to the sender or a configured admin for now.
       // Let's use a default recipient from env if available, else log it.
-      const recipient = process.env.DEFAULT_RECIPIENT || "user@example.com";
+      const recipient = getSetting('DEFAULT_RECIPIENT') || process.env.DEFAULT_RECIPIENT || "user@example.com";
 
       await sendEmail({
         to: recipient,
@@ -166,7 +167,7 @@ app.post("/process-reminders", async (req, res) => {
 
 app.post("/send-digest", async (req, res) => {
   try {
-    const { email } = req.body; // Recipient email
+    const email = getSetting('DEFAULT_RECIPIENT') || req.body.email; // Recipient email
     if (!email) {
       return res.status(400).json({ error: "Recipient email is required" });
     }
@@ -180,7 +181,8 @@ app.post("/send-digest", async (req, res) => {
 app.post("/send-alert", async (req, res) => {
   try {
     console.log("[DEBUG] /send-alert received body:", JSON.stringify(req.body, null, 2));
-    const { email, recipient } = req.body;
+    const { email } = req.body;
+    const recipient = getSetting('DEFAULT_RECIPIENT') || req.body.recipient;
     if (!email || Object.keys(email).length === 0 || !recipient) {
       return res.status(400).json({ error: "Email data (non-empty) and recipient are required" });
     }
@@ -191,7 +193,7 @@ app.post("/send-alert", async (req, res) => {
   }
 });
 
-import { authorize, listMessages, markAsRead, getOAuthClient, saveCredentials, SCOPES } from "./helpers/gmail.js";
+import { authorize, listMessages, markAsRead, getOAuthClient, saveCredentials, getUserEmail, SCOPES } from "./helpers/gmail.js";
 
 app.get("/auth/google", async (req, res) => {
   try {
@@ -220,6 +222,14 @@ app.get("/auth/google/callback", async (req, res) => {
     client.setCredentials(tokens);
     await saveCredentials(client);
 
+    try {
+      const authorizedEmail = await getUserEmail(client);
+      setSetting('DEFAULT_RECIPIENT', authorizedEmail);
+      console.log(`Connected account: ${authorizedEmail}`);
+    } catch (err) {
+      console.error("Failed to read user email on auth", err);
+    }
+
     res.redirect('/dashboard?status=connected');
   } catch (e) {
     console.error("Auth Callback Error:", e);
@@ -237,9 +247,10 @@ app.get("/get-unread-emails", async (req, res) => {
       query += ' is:important';
     }
 
-    // specific query param > env var > default 5
-    const envLimit = process.env.EMAIL_BATCH_LIMIT ? parseInt(process.env.EMAIL_BATCH_LIMIT) : 5;
-    const maxResults = envLimit;
+    // specific query param > db setting > default 5
+    const dbLimit = getSetting('EMAIL_BATCH_LIMIT');
+    const limit = dbLimit ? parseInt(dbLimit) : (process.env.EMAIL_BATCH_LIMIT ? parseInt(process.env.EMAIL_BATCH_LIMIT) : 5);
+    const maxResults = limit;
 
     const messages = await listMessages(auth, { limit: maxResults, query });
     res.json(messages);
@@ -278,9 +289,33 @@ app.get("/dashboard", (req, res) => {
         <h1>📧 AI Email Responder Dashboard</h1>
 
         <div style="margin-bottom: 20px; padding: 10px; background: white; border: 1px solid #ddd;">
-           <h3>Settings</h3>
+           <h3>App Settings</h3>
            <a href="/auth/google" style="background: #dd4b39; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Connect Gmail</a>
            <span style="margin-left: 10px; color: #666; font-size: 14px;">(Click to authorize or re-authorize)</span>
+           
+           <hr style="margin: 20px 0; border-top: 1px solid #ddd;">
+           
+           <form action="/settings" method="POST" style="margin-top: 15px;">
+              <p><strong>Connected Email / Recipient:</strong> ${getSetting('DEFAULT_RECIPIENT') || 'Not Connected'}</p>
+              
+              <label for="channel"><strong>Notification Channel:</strong></label><br>
+              <select name="channel" id="channel" style="padding: 5px; margin-top: 5px; margin-bottom: 15px;">
+                <option value="EMAIL" ${getSetting('NOTIFICATION_CHANNEL') === 'EMAIL' ? 'selected' : ''}>Email Only</option>
+                <option value="WHATSAPP" ${getSetting('NOTIFICATION_CHANNEL') === 'WHATSAPP' ? 'selected' : ''}>WhatsApp Only</option>
+                <option value="BOTH" ${getSetting('NOTIFICATION_CHANNEL') === 'BOTH' ? 'selected' : ''}>Both</option>
+              </select>
+              <br>
+
+              <label for="wa_number"><strong>WhatsApp Number:</strong> (Used if WhatsApp is selected)</label><br>
+              <input type="text" name="wa_number" id="wa_number" value="${getSetting('WHATSAPP_RECIPIENT_PHONE') || ''}" placeholder="+1234567890" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 300px;">
+              <br>
+
+              <label for="email_limit"><strong>Email Fetch Batch Limit:</strong></label><br>
+              <input type="number" name="email_limit" id="email_limit" value="${getSetting('EMAIL_BATCH_LIMIT') || 5}" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 100px;">
+              <br>
+
+              <button type="submit" style="background: #1976d2; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Save Settings</button>
+           </form>
         </div>
         
         <h2>Recent Email Logs</h2>
@@ -328,6 +363,19 @@ app.get("/dashboard", (req, res) => {
     res.send(html);
   } catch (e) {
     res.status(500).send("Error loading dashboard: " + e.message);
+  }
+});
+
+app.post("/settings", (req, res) => {
+  try {
+    const { channel, wa_number, email_limit } = req.body;
+    if (channel) setSetting('NOTIFICATION_CHANNEL', channel);
+    if (wa_number !== undefined) setSetting('WHATSAPP_RECIPIENT_PHONE', wa_number);
+    if (email_limit) setSetting('EMAIL_BATCH_LIMIT', email_limit);
+
+    res.redirect('/dashboard?status=settings_saved');
+  } catch (e) {
+    res.status(500).send("Error saving settings: " + e.message);
   }
 });
 

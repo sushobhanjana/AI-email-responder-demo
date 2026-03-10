@@ -55,3 +55,8 @@ CREATE TABLE IF NOT EXISTS sender_rules (
     priority TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS global_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
