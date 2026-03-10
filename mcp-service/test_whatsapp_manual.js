@@ -22,8 +22,11 @@ async function sendWhatsAppMessage(to, text) {
         const body = {
             messaging_product: 'whatsapp',
             to: to.replace(/\D/g, ''),
-            type: 'text',
-            text: { body: text }
+            type: 'template',
+            template: {
+                name: 'hello_world',
+                language: { code: 'en_US' }
+            }
         };
 
         const response = await fetch(url, {

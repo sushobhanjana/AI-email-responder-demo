@@ -1,0 +1,42 @@
+[
+    {
+        "id": "msg1",
+        "threadId": "thread_urgent_1",
+        "subject": "URGENT: Major Issue with Production Deployment!!",
+        "sender": "sarah.jenkins@vip-client.com",
+        "body": "Hi team, we are facing critical downtime after the recent deployment. The dashboard is completely inaccessible and we are losing sales by the minute. Please escalate this immediately and provide an ETA for a fix! I am extremely disappointed with the current stability.",
+        "date": "2026-03-10T09:12:00Z"
+    },
+    {
+        "id": "msg2",
+        "threadId": "thread_hierarchy_1",
+        "subject": "Q3 Roadmap Review and Alignment",
+        "sender": "ceo@ourcompany.com",
+        "body": "Team, please review the attached Q3 roadmap draft. I need all department heads to provide final comments by EOD tomorrow so we can finalize the budget allocations. This is a top priority.",
+        "date": "2026-03-10T10:30:00Z"
+    },
+    {
+        "id": "msg3",
+        "threadId": "thread_meeting_1",
+        "subject": "Project Kickoff Sync: Alpha Integration",
+        "sender": "project.manager@ourcompany.com",
+        "body": "Hi everyone, thanks for joining the Alpha integration kickoff call today. We covered the initial scope, timelines, and primary responsibilities. A follow-up MoM (Minutes of Meeting) should be shared soon to outline the next steps and action items.",
+        "date": "2026-03-09T14:00:00Z"
+    },
+    {
+        "id": "msg4",
+        "threadId": "thread_normal_1",
+        "subject": "Weekly Newsletter: Design Trends Q3",
+        "sender": "newsletter@designweekly.com",
+        "body": "Here are the top 5 design trends you should watch out for this quarter. From brutalism to glassmorphism, UI aesthetics are evolving fast...",
+        "date": "2026-03-10T11:00:00Z"
+    },
+    {
+        "id": "msg5",
+        "threadId": "thread_client_request",
+        "subject": "Feature Request: Data Export format",
+        "sender": "david.lee@standard-client.com",
+        "body": "Hello, could you let us know if exporting reports in CSV format is on the upcoming roadmap? It would be very helpful for our analytics team.",
+        "date": "2026-03-10T13:45:00Z"
+    }
+]
