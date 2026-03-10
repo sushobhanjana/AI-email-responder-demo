@@ -43,15 +43,24 @@ export async function embedText(text) {
 }
 
 export async function retrieveDocs(text) {
-  const emb = await embedText(text);
-  const resp = await client.search(process.env.QDRANT_COLLECTION, {
-    vector: emb,
-    limit: 5
-  });
-  return resp.map(r => r.payload.text);
+  try {
+    const emb = await embedText(text);
+    const resp = await client.search(process.env.QDRANT_COLLECTION, {
+      vector: emb,
+      limit: 5
+    });
+    return resp.map(r => r.payload.text);
+  } catch (e) {
+    console.warn("[Qdrant] Search failed, perhaps Qdrant is offline. Returning empty docs. Error:", e.message);
+    return [];
+  }
 }
 
 export async function callLLM(emailText, docs, metadata = {}) {
+  const pastEmailsContext = metadata.pastEmails && metadata.pastEmails.length > 0
+    ? `\nPAST COMMUNICATION FROM SENDER:\n${metadata.pastEmails.map(e => `- Subject: ${e.subject} (Date: ${e.received_at})\n  Escalation: ${e.is_escalation}, Urgent: ${e.is_urgent}`).join('\n')}`
+    : '';
+
   const systemPrompt = `
 You are an intelligent Email Analyzer for a corporate environment.
 Your goal is to classify emails, assess priority, and detect specific actionable items based on company policies.
@@ -60,6 +69,7 @@ CONTEXT:
 - Is Hierarchy (Internal Management): ${metadata.isHierarchy || false}
 - Is Client (External): ${metadata.isClient || false}
 - Is Meeting Related: ${metadata.isMeeting || false}
+- Is User in "To" field (Directly addressed): ${metadata.userInTo || false}${pastEmailsContext}
 
 RELEVANT POLICIES:
 ${docs.join("\n")}
@@ -69,7 +79,7 @@ Analyze the email below and return a JSON object with the following fields:
 - category: (String) One of "Work", "Client", "Personal", "Spam", "Newsletter", "HR", "Finance"
 - priority: (String) "High", "Medium", "Low"
 - confidence: (Number) 0.0 to 1.0
-- is_escalation: (Boolean) True if the tone indicates anger, frustration, or explicit escalation
+- is_escalation: (Boolean) True if the tone indicates anger, frustration, explicit escalation, OR if there's a negative sentiment deviation from prior communications.
 - is_urgent: (Boolean) True if immediate action is requested (e.g., "ASAP", "Urgent", deadlines today)
 - mom_missing: (Boolean) True ONLY if this is a past meeting where Minutes of Meeting (MoM) haven't been sent yet.
 - actions: (Array<String>) List of recommended actions (e.g., "Reply", "Schedule Meeting", "File Ticket")

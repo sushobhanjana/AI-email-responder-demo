@@ -1,8 +1,8 @@
 import { trackMeeting, getMissingMoMs, queueReminder, updateMeeting, getDb } from './database.js';
 
 export async function processMoM(email, analysis) {
-    // 1. If it's a meeting (and not just a MoM itself), track it
-    if (analysis.is_meeting && !analysis.is_mom) {
+    // 1. If it's a meeting (and not just a MoM itself), track it ONLY for client or internal hierarchy meetings
+    if (analysis.is_meeting && !analysis.is_mom && (analysis.is_client || analysis.is_hierarchy)) {
         // Use email ID as meeting ID for now (assuming 1 email = 1 meeting event)
         // In a real app, we'd parse the calendar invite ID
         const meetingId = email.id;

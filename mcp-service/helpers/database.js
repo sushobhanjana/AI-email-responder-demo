@@ -142,3 +142,15 @@ export function upsertSenderRule(rule) {
 export function getSenderRule(senderEmail) {
     return getDb().prepare('SELECT * FROM sender_rules WHERE sender_email = ?').get(senderEmail);
 }
+
+// Analytics Helpers
+export function getPastEmailsForSender(senderEmail, limit = 5) {
+    // Only fetch basic info and sentiment/analysis to keep it lightweight
+    return getDb().prepare(`
+        SELECT email_id, subject, is_escalation, is_urgent, received_at, analysis_json
+        FROM email_logs
+        WHERE sender LIKE '%' || ? || '%'
+        ORDER BY received_at DESC
+        LIMIT ?
+    `).all(senderEmail, limit);
+}
