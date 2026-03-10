@@ -25,14 +25,14 @@ async function runTest() {
     // 2. Define the mock incoming email from the same sender, but now angry and urgent
     const mockEmail = {
         id: 'mock_current_1',
-        subject: 'URGENT: Why is the project delayed?! Need sync meeting now',
-        from: 'boss@yourcompany.com',
+        subject: '⚡ High Alert: Immediate Attention Required on Pending Deliverables & Support',
+        from: 'sushobhan.jana@intglobal.com',
         to: ['me@yourcompany.com'],
-        cc: ['team@yourcompany.com'],
-        bodyPlain: 'I am extremely disappointed. I asked for this last week and still have not received the project files. Why is this delayed?! We need a meeting right now. Schedule it ASAP and make sure to take minutes.',
+        cc: [],
+        bodyPlain: 'From: Sourav Kumar Maity\nCategory: Work\nAnalysis Reason:',
         internalDate: new Date().getTime().toString(),
         threadId: 'thread_current',
-        snippet: 'I am extremely disappointed. I asked for this last week...'
+        snippet: 'The email is from an internal domain (@intglobal.com)...'
     };
 
     console.log("Analyzing mock email...");
