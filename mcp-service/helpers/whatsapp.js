@@ -1,42 +1,35 @@
-import fetch from 'node-fetch';
+import twilio from 'twilio';
 
+/**
+ * Sends a WhatsApp message using Twilio's API.
+ * 
+ * @param {string} to - Recipient phone number (e.g., '+919932116301')
+ * @param {string} text - Message content
+ */
 export async function sendWhatsAppMessage(to, text) {
-    const token = process.env.WHATSAPP_ACCESS_TOKEN;
-    const phoneId = process.env.WHATSAPP_PHONE_ID;
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
 
-    if (!token || !phoneId) {
-        console.log('[WhatsApp] Credentials missing. Skipping message send.');
+    if (!accountSid || !authToken || !fromPhone) {
+        console.log('[WhatsApp] Twilio credentials missing. Skipping message send.');
         console.log(`[Mock WhatsApp] To: ${to}, Message: ${text}`);
         return { message: 'Mock WhatsApp sent (missing credentials)' };
     }
 
-    const url = `https://graph.facebook.com/v17.0/${phoneId}/messages`;
+    const client = twilio(accountSid, authToken);
 
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: to.replace(/\D/g, ''),
-                type: 'text',
-                text: { body: text }
-            })
+        const response = await client.messages.create({
+            from: fromPhone,
+            body: text,
+            to: `whatsapp:${to.replace(/\D/g, '').startsWith('+') ? to.replace(/\D/g, '') : '+' + to.replace(/\D/g, '')}`
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(JSON.stringify(data));
-        }
-
-        console.log('[WhatsApp] Message sent:', data.messages?.[0]?.id);
-        return data;
+        console.log(`[WhatsApp] Success! Message SID: ${response.sid}`);
+        return response;
     } catch (error) {
-        console.error('[WhatsApp] Error sending message:', error);
+        console.error('[WhatsApp] Error sending message via Twilio:', error);
         throw error;
     }
 }

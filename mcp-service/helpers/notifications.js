@@ -56,18 +56,18 @@ export async function sendEmail({ to, subject, html, text }) {
         const whatsappMessage = `*${subject}*\n\n${plainText}`;
 
         // Use configured recipient phone or fallback to a default
-        const recipientPhone = getSetting('WHATSAPP_RECIPIENT_PHONE') || process.env.WHATSAPP_RECIPIENT_PHONE;
+        let recipientPhone = getSetting('WHATSAPP_RECIPIENT_PHONE') || process.env.WHATSAPP_RECIPIENT_PHONE;
 
-        if (recipientPhone) {
-            try {
-                const waResult = await sendWhatsAppMessage(recipientPhone, whatsappMessage);
-                results.whatsapp = waResult;
-            } catch (error) {
-                // Don't throw if we also sent email
-                if (channel === 'WHATSAPP') throw error;
-            }
-        } else {
-            console.log('[Notifications] WHATSAPP_RECIPIENT_PHONE not set. Skipping WhatsApp.');
+        if (!recipientPhone) {
+            console.log('[Notifications] Recipient phone not found in DB or ENV. Falling back to default.');
+            recipientPhone = '+919932116301';
+        }
+        try {
+            const waResult = await sendWhatsAppMessage(recipientPhone, whatsappMessage);
+            results.whatsapp = waResult;
+        } catch (error) {
+            // Don't throw if we also sent email
+            if (channel === 'WHATSAPP') throw error;
         }
     }
 
