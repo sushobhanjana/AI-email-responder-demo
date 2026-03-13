@@ -50,10 +50,8 @@ export async function sendEmail({ to, subject, html, text }) {
 
     // 2. Send via WhatsApp
     if (channel === 'WHATSAPP' || channel === 'BOTH') {
-        // Convert HTML to simple text for WhatsApp
-        // Simple strip tags for now. In production, use a library like 'striptags' or 'html-to-text'
-        const plainText = text || html.replace(/<[^>]*>?/gm, '');
-        const whatsappMessage = `*${subject}*\n\n${plainText}`;
+        // If custom text is provided, use it as is. Otherwise, formatted from subject + html.
+        const whatsappMessage = text || `*${subject}*\n\n${html.replace(/<[^>]*>?/gm, '')}`;
 
         // Use configured recipient phone or fallback to a default
         let recipientPhone = getSetting('WHATSAPP_RECIPIENT_PHONE') || process.env.WHATSAPP_RECIPIENT_PHONE;
@@ -104,43 +102,61 @@ export async function generateAndSendDigest(recipientEmail) {
         WHERE status = 'tracking' AND mom_received = 0
     `).all();
 
-    // 4. Generate HTML
-    let html = `<h1>Daily Email Digest</h1>`;
+    // 4. Generate Content
+    const dateStr = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let html = `<h1>Daily Email Digest</h1><p><em>${dateStr}</em></p>`;
+    let text = `*📅 DAILY EMAIL DIGEST*\n_${dateStr}_\n`;
 
     if (highPriority.length > 0) {
         html += `<h2>🚨 High Priority Emails (${highPriority.length})</h2><ul>`;
+        text += `\n*🚨 HIGH PRIORITY (${highPriority.length})*\n`;
+
         highPriority.forEach(email => {
             html += `<li><strong>${email.subject}</strong> from ${email.sender}<br/>
             <em>${email.category}</em> - <a href="https://mail.google.com/mail/u/0/#inbox/${email.thread_id}">View</a></li>`;
+
+            text += `• *Subject*: ${email.subject}\n`;
+            text += `  From: ${email.sender} | Category: ${email.category}\n`;
         });
         html += `</ul>`;
     } else {
         html += `<p>No high priority emails today.</p>`;
+        text += `\n_No high priority emails today._\n`;
     }
 
     if (missingMoMs.length > 0) {
         html += `<h2>📝 Missing MoMs (${missingMoMs.length})</h2><ul>`;
+        text += `\n*📝 MISSING MoMs (${missingMoMs.length})*\n`;
+
         missingMoMs.forEach(mom => {
-            html += `<li>Meeting: <strong>${mom.subject}</strong> (${new Date(mom.meeting_date).toLocaleDateString()})<br/>
+            const mDate = new Date(mom.meeting_date).toLocaleDateString();
+            html += `<li>Meeting: <strong>${mom.subject}</strong> (${mDate})<br/>
             Participants: ${JSON.parse(mom.participants).join(', ')}</li>`;
+
+            text += `• ${mom.subject} (${mDate})\n`;
         });
         html += `</ul>`;
     }
 
     if (reminders.length > 0) {
         html += `<h2>⏰ Pending Reminders (${reminders.length})</h2><ul>`;
+        text += `\n*⏰ REMINDERS (${reminders.length})*\n`;
+
         reminders.forEach(rem => {
             const meta = JSON.parse(rem.metadata || '{}');
             html += `<li>${rem.reminder_type}: ${meta.subject || 'No Subject'}</li>`;
+
+            text += `• ${rem.reminder_type}: ${meta.subject || 'No Subject'}\n`;
         });
         html += `</ul>`;
     }
 
-    // 5. Send Email
+    // 5. Send Notification
     return sendEmail({
         to: recipientEmail,
         subject: `Daily Digest - ${new Date().toLocaleDateString()}`,
-        html
+        html,
+        text
     });
 }
 
