@@ -58,14 +58,21 @@ export async function sendEmail({ to, subject, html, text }) {
         // Use configured recipient phone or fallback to a default
         let recipientPhone = getSetting('WHATSAPP_RECIPIENT_PHONE') || process.env.WHATSAPP_RECIPIENT_PHONE;
 
+        console.log(`[Notifications] NOTIFICATION_CHANNEL from DB: ${getSetting('NOTIFICATION_CHANNEL')}`);
+        console.log(`[Notifications] Selected Channel: ${channel}`);
+        console.log(`[Notifications] Recipient Phone from DB: ${getSetting('WHATSAPP_RECIPIENT_PHONE')}`);
+
         if (!recipientPhone) {
             console.log('[Notifications] Recipient phone not found in DB or ENV. Falling back to default.');
             recipientPhone = '+919932116301';
         }
+        console.log(`[Notifications] Final Recipient Phone: ${recipientPhone}`);
         try {
             const waResult = await sendWhatsAppMessage(recipientPhone, whatsappMessage);
             results.whatsapp = waResult;
+            console.log(`[Notifications] WhatsApp send result: Success (SID: ${waResult.sid})`);
         } catch (error) {
+            console.error('[Notifications] WhatsApp send failed:', error.message || error);
             // Don't throw if we also sent email
             if (channel === 'WHATSAPP') throw error;
         }

@@ -19,11 +19,14 @@ export async function sendWhatsAppMessage(to, text) {
 
     const client = twilio(accountSid, authToken);
 
+    const formattedTo = `whatsapp:${to.trim().replace(/\D/g, '').startsWith('+') ? to.trim().replace(/\D/g, '') : '+' + to.trim().replace(/\D/g, '')}`;
+    console.log(`[WhatsApp] Sending to: ${formattedTo}, from: ${fromPhone}`);
+
     try {
         const response = await client.messages.create({
             from: fromPhone,
             body: text,
-            to: `whatsapp:${to.replace(/\D/g, '').startsWith('+') ? to.replace(/\D/g, '') : '+' + to.replace(/\D/g, '')}`
+            to: formattedTo
         });
 
         console.log(`[WhatsApp] Success! Message SID: ${response.sid}`);
