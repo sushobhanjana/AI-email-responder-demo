@@ -314,6 +314,22 @@ app.get("/dashboard", (req, res) => {
               <input type="number" name="email_limit" id="email_limit" value="${getSetting('EMAIL_BATCH_LIMIT') || 5}" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 100px;">
               <br>
 
+              <label for="digest_days"><strong>Daily Digest Lookback (Days):</strong></label><br>
+              <input type="number" name="digest_days" id="digest_days" value="${getSetting('DIGEST_LOOKBACK_DAYS') || 1}" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 100px;">
+              <br>
+
+              <label for="mom_hours"><strong>MoM Missing Alert Threshold (Hours):</strong></label><br>
+              <input type="number" name="mom_hours" id="mom_hours" value="${getSetting('MOM_MISSING_THRESHOLD_HOURS') || 24}" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 100px;">
+              <br>
+
+              <label for="internal_domains"><strong>Internal Domains:</strong> (Comma separated)</label><br>
+              <input type="text" name="internal_domains" id="internal_domains" value="${getSetting('INTERNAL_DOMAINS') || 'yourcompany.com'}" placeholder="company.com, internal.org" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 400px;">
+              <br>
+
+              <label for="client_domains"><strong>Client Domains:</strong> (Comma separated)</label><br>
+              <input type="text" name="client_domains" id="client_domains" value="${getSetting('CLIENT_DOMAINS') || 'client.com, partner.org'}" placeholder="client1.com, client2.net" style="padding: 5px; margin-top: 5px; margin-bottom: 15px; width: 400px;">
+              <br>
+
               <button type="submit" style="background: #1976d2; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Save Settings</button>
            </form>
         </div>
@@ -368,10 +384,14 @@ app.get("/dashboard", (req, res) => {
 
 app.post("/settings", (req, res) => {
   try {
-    const { channel, wa_number, email_limit } = req.body;
+    const { channel, wa_number, email_limit, digest_days, mom_hours, internal_domains, client_domains } = req.body;
     if (channel) setSetting('NOTIFICATION_CHANNEL', channel);
     if (wa_number !== undefined) setSetting('WHATSAPP_RECIPIENT_PHONE', wa_number);
     if (email_limit) setSetting('EMAIL_BATCH_LIMIT', email_limit);
+    if (digest_days) setSetting('DIGEST_LOOKBACK_DAYS', digest_days);
+    if (mom_hours) setSetting('MOM_MISSING_THRESHOLD_HOURS', mom_hours);
+    if (internal_domains !== undefined) setSetting('INTERNAL_DOMAINS', internal_domains);
+    if (client_domains !== undefined) setSetting('CLIENT_DOMAINS', client_domains);
 
     res.redirect('/dashboard?status=settings_saved');
   } catch (e) {

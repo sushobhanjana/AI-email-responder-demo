@@ -82,13 +82,14 @@ export async function sendEmail({ to, subject, html, text }) {
 export async function generateAndSendDigest(recipientEmail) {
     const db = getDb();
 
-    // 1. Fetch High Priority Emails from last 24h
+    // 1. Fetch High Priority Emails from lookback period
+    const lookbackDays = getSetting('DIGEST_LOOKBACK_DAYS') || 1;
     const highPriority = db.prepare(`
         SELECT * FROM email_logs 
         WHERE priority = 'High' 
-        AND created_at >= datetime('now', '-1 day')
+        AND created_at >= datetime('now', ?)
         ORDER BY received_at DESC
-    `).all();
+    `).all(`-${lookbackDays} day`);
 
     // 2. Fetch Pending Reminders
     const reminders = db.prepare(`

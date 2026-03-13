@@ -1,4 +1,4 @@
-import { trackMeeting, getMissingMoMs, queueReminder, updateMeeting, getDb } from './database.js';
+import { trackMeeting, getMissingMoMs, queueReminder, updateMeeting, getDb, getSetting } from './database.js';
 
 export async function processMoM(email, analysis) {
     // 1. If it's a meeting (and not just a MoM itself), track it ONLY for client or internal hierarchy meetings
@@ -43,7 +43,8 @@ export async function processMoM(email, analysis) {
 }
 
 export function checkAndQueueReminders() {
-    const missing = getMissingMoMs();
+    const threshold = getSetting('MOM_MISSING_THRESHOLD_HOURS') || 24;
+    const missing = getMissingMoMs(threshold);
     const queued = [];
 
     for (const meeting of missing) {

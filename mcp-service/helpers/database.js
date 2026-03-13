@@ -101,14 +101,14 @@ export function trackMeeting(meeting) {
     });
 }
 
-export function getMissingMoMs() {
-    // Find meetings > 24h ago where MoM not received
+export function getMissingMoMs(thresholdHours = 24) {
+    // Find meetings > thresholdHours ago where MoM not received
     return getDb().prepare(`
         SELECT * FROM mom_tracker 
         WHERE status = 'tracking' 
         AND mom_received = 0 
-        AND meeting_date <= datetime('now', '-1 day')
-    `).all();
+        AND meeting_date <= datetime('now', ?)
+    `).all(`-${thresholdHours} hour`);
 }
 
 export function updateMeeting(meetingId, updates) {

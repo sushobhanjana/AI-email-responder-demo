@@ -1,9 +1,7 @@
 import { retrieveDocs, callLLM } from './vector.js';
-import { getSenderRule, getPastEmailsForSender } from './database.js';
+import { getSenderRule, getPastEmailsForSender, getSetting } from './database.js';
 
 // Rule-based constants (should be loaded from policies/config in production)
-const HIERARCHY_DOMAINS = ['yourcompany.com']; // Replace with actual internal domain
-const CLIENT_DOMAINS = ['client.com', 'partner.org'];
 const MEETING_KEYWORDS = ['meeting', 'call', 'sync', 'discussion', 'review', 'zoom', 'teams', 'meet'];
 const MOM_KEYWORDS = ['mom', 'minutes', 'summary', 'action items', 'notes'];
 
@@ -42,8 +40,14 @@ export async function classifyEmail(email) {
     }
 
     // 1. Rule-Based Pre-classification
-    const isHierarchy = HIERARCHY_DOMAINS.some(d => from.includes(d));
-    const isClient = CLIENT_DOMAINS.some(d => from.includes(d));
+    const internalDomainsStr = getSetting('INTERNAL_DOMAINS') || 'yourcompany.com';
+    const clientDomainsStr = getSetting('CLIENT_DOMAINS') || 'client.com, partner.org';
+
+    const hierarchyDomains = internalDomainsStr.split(',').map(d => d.trim().toLowerCase());
+    const clientDomains = clientDomainsStr.split(',').map(d => d.trim().toLowerCase());
+
+    const isHierarchy = hierarchyDomains.some(d => from.toLowerCase().includes(d));
+    const isClient = clientDomains.some(d => from.toLowerCase().includes(d));
 
     const isMeeting = MEETING_KEYWORDS.some(k => subjectLower.includes(k));
     const isMoM = MOM_KEYWORDS.some(k => subjectLower.includes(k));
