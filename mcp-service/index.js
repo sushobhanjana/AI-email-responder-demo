@@ -33,12 +33,12 @@ app.post("/analyze-email", async (req, res) => {
 
       // OPTIONAL: If it exists in DB but is still unread in Gmail (e.g. previous run crashed before marking read),
       // we should probably mark it read now to clear the queue.
-      try {
+      /* try {
         const auth = await authorize();
         await markAsRead(auth, email.id);
       } catch (err) {
         console.error(`Failed to mark existing email ${email.id} as read:`, err.message);
-      }
+      } */
 
       const cachedAnalysis = JSON.parse(existing.analysis_json);
       return res.json({
@@ -81,12 +81,12 @@ app.post("/analyze-email", async (req, res) => {
     console.log(`Analyzed & Logged: ${email.subject} [${analysis.category}/${analysis.priority}]`);
 
     // 4. Mark as Read in Gmail to prevent re-fetching
-    try {
+    /* try {
       const auth = await authorize();
       await markAsRead(auth, email.id);
     } catch (err) {
       console.error(`Failed to mark email ${email.id} as read:`, err.message);
-    }
+    } */
 
     // Return merged data for workflow usage
     res.json({
